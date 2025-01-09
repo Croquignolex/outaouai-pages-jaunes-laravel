@@ -1,0 +1,88 @@
+networks:
+  opj_network:
+
+volumes:
+  opj_volume:
+
+services:
+  mysql:
+    image: mysql:8.4.3
+    container_name: opj_mysql_container
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: outaouai_pages_jaunes
+      MYSQL_USER: opj
+      MYSQL_PASSWORD: opj
+    healthcheck:
+      test: [ "CMD", "mysql", "--version" ]
+      interval: 5s
+      retries: 5
+      timeout: 5s
+    volumes:
+        - opj_volume:/var/lib/mysql
+        - ./deploy/mysql:/docker-entrypoint-initdb.d
+    networks:
+      - opj_network
+
+  php_fpm:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: opj_php_fpm_container
+    ports:
+      - "9000:9000"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "php", "--version" ]
+      interval: 3s
+      retries: 5
+      timeout: 5s
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - opj_network
+
+  composer:
+    image: composer:2.8.4
+    container_name: opj_composer_container
+    working_dir: /var/www/html
+    command: composer install
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - opj_network
+
+  artisan:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: opj_artisan_container
+    working_dir: /var/www/html
+    command: sh -c "php artisan key:generate && php artisan migrate"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - opj_network
+
+  nginx:
+    image: nginx:stable-alpine
+    container_name: opj_nginx_container
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      php_fpm:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./:/var/www/html
+      - ./deploy/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - opj_network
