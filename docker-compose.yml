@@ -31,8 +31,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: opj_php_fpm_container
-    ports:
-      - "9000:9000"
+    expose:
+      - 9000
     restart: unless-stopped
     healthcheck:
       test: [ "CMD", "php", "--version" ]
@@ -74,7 +74,7 @@ services:
     container_name: opj_nginx_container
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8000:80"
     depends_on:
       php-fpm:
         condition: service_healthy
