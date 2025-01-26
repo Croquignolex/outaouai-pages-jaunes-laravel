@@ -1,6 +1,6 @@
 FROM php:8.2.27-fpm-alpine
 
-MAINTAINER "Alex NGOMBOL" <gpetitalex10@gmail.com>
+MAINTAINER "Alex Ngombol" <gpetitalex10@gmail.com>
 
 WORKDIR /var/www/html
 
